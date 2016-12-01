@@ -91,3 +91,31 @@ def KFoldNB(inputs,outputs,k = 8):
     print("Naive Bayes:" + " = Score:%2.2e[+/- %2.2e]"%(np.mean(scores),np.std(scores)))
     
     return np.mean(scores),np.std(scores)
+
+def plotConfusionMatrix(y, y_predict):
+    #print("Plotting graphic : ",arquivo)
+    classes = ['Derrota','Empate','Vitória']
+    
+    cm = confusion_matrix(y, y_predict)
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_aspect(1)
+    
+    width, height = cm.shape
+    for i in range(width):
+        for j in range(height):
+            ax.annotate(str(cm[i][j]), xy=(j, i), 
+                        horizontalalignment='center',
+                        verticalalignment='center')
+
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title('Confusion Matrix')
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+    plt.ylabel('Y')
+    plt.xlabel('Prediction')
+    #plt.savefig(arquivo)
+    plt.show()
+    #return plt
