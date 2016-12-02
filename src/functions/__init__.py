@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import decomposition
+import decimal
 
 import warnings
 import sys
@@ -27,6 +28,71 @@ def plotPCASpectrum(data):
 	plt.xlabel('n_components')
 	plt.ylabel('explained_variance_')
 	plt.show()
+
+
+
+
+def defineTeamWin(dataHome,dataAway):
+    result = np.asarray([],dtype=int)   
+    for x in range(dataHome.size):
+        homeGoals = round(decimal.Decimal(dataHome[x]),4)
+        awayGoals = round(decimal.Decimal(dataAway[x]),4)
+        if homeGoals > awayGoals:
+            result = np.concatenate((result,[1]))
+        elif homeGoals == awayGoals:
+            result = np.concatenate((result,[0]))
+        else:
+            result = np.concatenate((result,[-1]))
+
+    return result
+
+
+
+def KFoldRC(metric,inputs,outputs,k=10,printMatrixConfusion = False,printPredictionForTeam = False):
+
+    lista = list(range(1,len(inputs))) 
+    shuffle(lista)
+    a = np.asarray(lista) % k   
+    
+    scores = np.zeros(k)
+    scoresT = np.zeros(k)
+    recall = np.zeros(k)
+    average_precision = np.zeros(k)
+    
+    for fold in range(0,k):
+        treinoIndex = np.where(a != fold)[0]
+        testeIndex =  np.where(a == fold)[0]        
+        
+        inputsTrain =  np.array([inputs[y,:] for y in treinoIndex])       
+        outputsTrain = np.array([outputs[y,:] for y in treinoIndex],dtype="int32")
+       
+        clf1 = svm.SVR() 
+        clf1.fit(inputsTrain,outputsTrain[:,0])
+
+        clf2 = svm.SVR()   
+        clf2.fit(inputsTrain,outputsTrain[:,1])       
+                        
+        testOutputs = np.array([outputs[y,:] for y in testeIndex]) 
+        testInputs = np.array([inputs[y,:]  for y in testeIndex])
+
+        predicts1 = clf1.predict(testInputs)
+        predicts2 = clf2.predict(testInputs)
+        print(predicts1[range(5)])
+        print(predicts2[range(5)])
+
+        testOutputsResult = defineTeamWin(testOutputs[:,0],testOutputs[:,1])
+        predictsResult = defineTeamWin(predicts1,predicts2)
+
+        scores[fold] = accuracy_score(testOutputsResult,predictsResult)
+        
+        if printMatrixConfusion:
+            matrixConfusion = confusion_matrix(testOutputs, predicts)
+            print(matrixConfusion)
+   
+    print(" = Score:%2.2e[+/- %2.2e]"%(np.mean(scores),np.std(scores)))
+    
+    return np.mean(scores)
+
 
 
 def KFoldSVM(inputs,outputs,metric,k=10,printMatrixConfusion = False):
@@ -91,6 +157,27 @@ def KFoldNB(inputs,outputs,k = 8):
     print("Naive Bayes:" + " = Score:%2.2e[+/- %2.2e]"%(np.mean(scores),np.std(scores)))
     
     return np.mean(scores),np.std(scores)
+
+
+def holdoutPlotConfusionMatrix(clf,inputs,outputs,percent=80):
+
+    size = len(outputs)
+    lista = list(range(size))
+    sizePercent = int(np.floor((percent * size) / 100))    
+    testInputsIndex = np.asarray(lista)[range(sizePercent,size)]
+    trainInputsIndex = np.asarray(lista)[range(sizePercent)]
+
+    inputsTrain =  np.array([inputs[y,:] for y in trainInputsIndex])       
+    outputsTrain = np.array([outputs[y] for y in trainInputsIndex],dtype="int32")
+
+    testInputs = np.array([inputs[y,:]  for y in testInputsIndex])
+    testOutputs = np.array([outputs[y] for y in testInputsIndex],dtype="int32")
+
+    clf.fit(inputsTrain, outputsTrain)
+    y_predict = clf.predict(testInputs)
+    plotConfusionMatrix(testOutputs, y_predict)
+
+
 
 def plotConfusionMatrix(y, y_predict):
     #print("Plotting graphic : ",arquivo)
