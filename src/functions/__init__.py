@@ -59,6 +59,23 @@ def errorForSession(inputsSession,outputSession,functionCreateMetric,date,inputB
 
     return scores
 
+def holdoutPlotConfusionMatrix(clf,inputs,outputs,percent=80):
+
+    size = len(outputs)
+    lista = list(range(size))
+    sizePercent = int(np.floor((percent * size) / 100))    
+    testInputsIndex = np.asarray(lista)[range(sizePercent,size)]
+    trainInputsIndex = np.asarray(lista)[range(sizePercent)]
+
+    inputsTrain =  np.array([inputs[y,:] for y in trainInputsIndex])       
+    outputsTrain = np.array([outputs[y] for y in trainInputsIndex],dtype="int32")
+
+    testInputs = np.array([inputs[y,:]  for y in testInputsIndex])
+    testOutputs = np.array([outputs[y] for y in testInputsIndex],dtype="int32")
+
+    clf.fit(inputsTrain, outputsTrain)
+    y_predict = clf.predict(testInputs)
+    plotConfusionMatrix(testOutputs, y_predict)
 
 
 
