@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import decomposition
-import decimal
 
 import warnings
 import sys
 from random import shuffle
 from math import sqrt
 import math
+import decimal
 
 #Sklearn -- Classification
 from sklearn import svm
@@ -15,6 +15,47 @@ from sklearn.naive_bayes import GaussianNB
 
 #Sklearn -- Metrics
 from sklearn.metrics import accuracy_score, confusion_matrix
+
+#all == choose all session with not trainning for test. nextSession == choose only next session to test
+def errorForSession(inputsSession,outputSession,functionCreateMetric,date,inputBeforeSession =[],outputBeforeSession =[],init=-1,test="all"):
+    uniqueDate = np.sort(np.unique(date))
+    pos = init
+    if init == -1:
+        index = 0
+        pos = uniqueDate[index]
+    else:
+        index = np.where(pos == uniqueDate)[0]
+
+    scores = []
+    while(pos < uniqueDate[-1]):
+        indexMatrixTrain = np.where(pos >= date)[0]
+        if(test == "all"):
+            indexMatrixTest = np.where(pos < date)[0]
+        else:
+            indexMatrixTest = np.where(uniqueDate[index+1] == date)[0]
+
+        clf = functionCreateMetric()
+
+        if(len(inputBeforeSession) > 0):            
+            inputClf = np.concatenate((inputBeforeSession,inputsSession[indexMatrixTrain,:]),axis=0)
+            outputClf =  np.concatenate((outputBeforeSession,outputSession[indexMatrixTrain]),axis=0)
+        else:            
+            inputClf = inputsSession[indexMatrixTrain,:]
+            outputClf = outputSession[indexMatrixTrain]
+
+        clf.fit(inputClf,outputClf)
+
+        predicts = clf.predict(inputsSession[indexMatrixTest])
+        score = accuracy_score(outputSession[indexMatrixTest],predicts)
+        scores = np.concatenate((scores,[score]),axis=0)
+       
+        pos = uniqueDate[index+1]
+        index = index + 1
+
+    return scores
+
+
+
 
 
 def plotPCASpectrum(data):
@@ -28,8 +69,6 @@ def plotPCASpectrum(data):
 	plt.xlabel('n_components')
 	plt.ylabel('explained_variance_')
 	plt.show()
-
-
 
 
 def defineTeamWin(dataHome,dataAway):
@@ -77,8 +116,7 @@ def KFoldRC(metric,inputs,outputs,k=10,printMatrixConfusion = False,printPredict
 
         predicts1 = clf1.predict(testInputs)
         predicts2 = clf2.predict(testInputs)
-        print(predicts1[range(5)])
-        print(predicts2[range(5)])
+        
 
         testOutputsResult = defineTeamWin(testOutputs[:,0],testOutputs[:,1])
         predictsResult = defineTeamWin(predicts1,predicts2)
@@ -92,7 +130,6 @@ def KFoldRC(metric,inputs,outputs,k=10,printMatrixConfusion = False,printPredict
     print(" = Score:%2.2e[+/- %2.2e]"%(np.mean(scores),np.std(scores)))
     
     return np.mean(scores)
-
 
 
 def KFoldSVM(inputs,outputs,metric,k=10,printMatrixConfusion = False):
@@ -157,27 +194,6 @@ def KFoldNB(inputs,outputs,k = 8):
     print("Naive Bayes:" + " = Score:%2.2e[+/- %2.2e]"%(np.mean(scores),np.std(scores)))
     
     return np.mean(scores),np.std(scores)
-
-
-def holdoutPlotConfusionMatrix(clf,inputs,outputs,percent=80):
-
-    size = len(outputs)
-    lista = list(range(size))
-    sizePercent = int(np.floor((percent * size) / 100))    
-    testInputsIndex = np.asarray(lista)[range(sizePercent,size)]
-    trainInputsIndex = np.asarray(lista)[range(sizePercent)]
-
-    inputsTrain =  np.array([inputs[y,:] for y in trainInputsIndex])       
-    outputsTrain = np.array([outputs[y] for y in trainInputsIndex],dtype="int32")
-
-    testInputs = np.array([inputs[y,:]  for y in testInputsIndex])
-    testOutputs = np.array([outputs[y] for y in testInputsIndex],dtype="int32")
-
-    clf.fit(inputsTrain, outputsTrain)
-    y_predict = clf.predict(testInputs)
-    plotConfusionMatrix(testOutputs, y_predict)
-
-
 
 def plotConfusionMatrix(y, y_predict):
     #print("Plotting graphic : ",arquivo)
