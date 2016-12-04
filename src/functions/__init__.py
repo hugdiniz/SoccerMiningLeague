@@ -16,10 +16,11 @@ from sklearn.naive_bayes import GaussianNB
 #Sklearn -- Metrics
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-#all == choose all session with not trainning for test. nextSession == choose only next session to test
-def errorForSession(inputsSession,outputSession,functionCreateMetric,date,inputBeforeSession =[],outputBeforeSession =[],init=-1,test="all"):
+#all == choose all session with not trainning for test. nextStage == choose only next stage to test
+def errorForSession(inputsSession,outputSession,functionCreateMetric,date,inputBeforeSession =[],outputBeforeSession =[], weightsFunction = -1,init=-1,test="all"):
     uniqueDate = np.sort(np.unique(date))
     pos = init
+    
     if init == -1:
         index = 0
         pos = uniqueDate[index]
@@ -43,7 +44,11 @@ def errorForSession(inputsSession,outputSession,functionCreateMetric,date,inputB
             inputClf = inputsSession[indexMatrixTrain,:]
             outputClf = outputSession[indexMatrixTrain]
 
-        clf.fit(inputClf,outputClf)
+        if(weightsFunction != -1):
+            weights = weightsFunction(inputClf)
+            clf.fit(inputClf,outputClf,weights)
+        else:  
+            clf.fit(inputClf,outputClf)
 
         predicts = clf.predict(inputsSession[indexMatrixTest])
         score = accuracy_score(outputSession[indexMatrixTest],predicts)
